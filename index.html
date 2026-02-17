@@ -1030,26 +1030,48 @@ async function init() {
 
 // Transform Fibery structure to our menu format
 function transformFiberyToMenuData(fiberyMenus) {
-  return fiberyMenus.map(m => ({
-    id: (m['Catering/Code'] || '').toLowerCase().replace(/\s+/g, '-'),
-    code: m['Catering/Code'] || '',
-    name: m['Catering/Name'] || '',
-    description: m['Catering/Description'] || '',
-    pricePerPerson: m['Catering/Price per Person'] || 0,
-    minGuests: m['Catering/Min Guests'] || 20,
-    active: m['Catering/Active'] !== false,
-    courses: (m['Catering/Courses'] || []).map(c => transformCourse(c))
-  }));
+  return fiberyMenus.map(m => {
+    const allCourses = (m['Catering/Courses'] || []).map(c => transformCourse(c));
+    
+    // Separate parent and child courses
+    const parentCourses = allCourses.filter(c => !c.parentId);
+    const childCourses = allCourses.filter(c => c.parentId);
+    
+    // Attach children to parents as subcategories
+    parentCourses.forEach(parent => {
+      if (parent.selectionRule === 'choose_split') {
+        parent.subcategories = childCourses
+          .filter(child => child.parentId === parent.id)
+          .sort((a, b) => a.displayOrder - b.displayOrder);
+      }
+    });
+    
+    // Return only parent courses (children are nested)
+    return {
+      id: (m['Catering/Code'] || '').toLowerCase().replace(/\s+/g, '-'),
+      code: m['Catering/Code'] || '',
+      name: m['Catering/Name'] || '',
+      description: m['Catering/Description'] || '',
+      pricePerPerson: m['Catering/Price per Person'] || 0,
+      minGuests: m['Catering/Min Guests'] || 20,
+      active: m['Catering/Active'] !== false,
+      courses: parentCourses.sort((a, b) => a.displayOrder - b.displayOrder)
+    };
+  });
 }
 
 function transformCourse(c) {
   const rule = c['Catering/Selection Rule'];
+  const parentCourse = c['Catering/Parent Course'];
+  const parentId = parentCourse && parentCourse.length > 0 ? parentCourse[0]['fibery/id'] : null;
+  
   const base = {
     id: c['fibery/id'],
     name: c['Catering/Display Title'] || c['fibery/name'],
     displayOrder: c['Catering/Display Order'] || 0,
     selectionRule: rule,
-    active: c['Catering/Active'] !== false
+    active: c['Catering/Active'] !== false,
+    parentId: parentId
   };
 
   if (rule === 'choose_one') {
@@ -1059,9 +1081,8 @@ function transformCourse(c) {
     base.ruleLabel = c['Catering/Rule Label'] || 'escolha ' + base.count;
   } else if (rule === 'choose_split') {
     base.minPct = c['Catering/Min Pct'] || 25;
-    base.ruleLabel = c['Catering/Rule Label'] || '1 prato por categoria';
-    // For split courses, Fibery structure might have subcategories
-    // This depends on your Fibery schema - adjust as needed
+    base.ruleLabel = c['Catering/Rule Label'] || 'distribua as quantidades';
+    base.subcategories = []; // Will be populated by parent
   }
 
   base.dishes = (c['Catering/Dishes'] || []).map(d => ({
