@@ -900,7 +900,7 @@
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const CONFIG = {
   fiberyWorkspace: 'navepadel',
-  fiberyToken: '61b942e2.583aed1e317e7bb83f9714b7d2df0305630',
+  fiberyToken: 'FIBERY_API_TOKEN',
   leadTimeDays: 5
 };
 
@@ -1010,9 +1010,67 @@ let state = {
 };
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-function init() {
-  state.menus = MENU_DATA.menus;
+async function init() {
+  try {
+    const response = await fetch('https://hook.eu2.make.com/bnljupflvrt94sxsqk4g5vhf2xrpbdyj');
+    const data = await response.json();
+    // Fibery returns [{success: true, result: [...]}]
+    if (data && data[0] && data[0].success) {
+      state.menus = transformFiberyToMenuData(data[0].result);
+    } else {
+      console.error('Fibery response error:', data);
+      state.menus = MENU_DATA.menus; // fallback to embedded data
+    }
+  } catch (e) {
+    console.error('Menu fetch failed:', e);
+    state.menus = MENU_DATA.menus; // fallback
+  }
   renderMenuCards();
+}
+
+// Transform Fibery structure to our menu format
+function transformFiberyToMenuData(fiberyMenus) {
+  return fiberyMenus.map(m => ({
+    id: (m['Catering/Public Id'] || '').toLowerCase().replace(/\s+/g, '-'),
+    code: m['Catering/Public Id'] || '',
+    name: m['fibery/name'] || '',
+    description: m['Catering/Description'] || '',
+    pricePerPerson: m['Catering/Price per Person'] || 0,
+    minGuests: m['Catering/Min Guests'] || 20,
+    active: m['Catering/Active'] !== false,
+    courses: (m['Catering/Courses'] || []).map(c => transformCourse(c))
+  }));
+}
+
+function transformCourse(c) {
+  const rule = c['Catering/Selection Rule'];
+  const base = {
+    id: c['fibery/id'],
+    name: c['Catering/Display Title'] || c['fibery/name'],
+    displayOrder: c['Catering/Display Order'] || 0,
+    selectionRule: rule,
+    active: c['Catering/Active'] !== false
+  };
+
+  if (rule === 'choose_one') {
+    base.ruleLabel = c['Catering/Rule Label'] || 'escolha 1 para todo o grupo';
+  } else if (rule === 'choose_many') {
+    base.count = c['Catering/Count'] || 2;
+    base.ruleLabel = c['Catering/Rule Label'] || 'escolha ' + base.count;
+  } else if (rule === 'choose_split') {
+    base.minPct = c['Catering/Min Pct'] || 25;
+    base.ruleLabel = c['Catering/Rule Label'] || '1 prato por categoria';
+    // For split courses, Fibery structure might have subcategories
+    // This depends on your Fibery schema - adjust as needed
+  }
+
+  base.dishes = (c['Catering/Dishes'] || []).map(d => ({
+    id: d['fibery/id'],
+    name: d['fibery/name'],
+    description: d['Catering/Description'] || ''
+  }));
+
+  return base;
 }
 
 // ── RENDER MENU CARDS ─────────────────────────────────────────────────────────
