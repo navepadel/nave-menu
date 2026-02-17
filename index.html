@@ -42,6 +42,7 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
+    margin-left: -8px;
   }
   
   .logo-img {
@@ -1534,6 +1535,7 @@ function renderSummary() {
   const menu = state.selectedMenu;
   const g = guests();
   const total = menu.pricePerPerson * g;
+  const totalWithVAT = menu.pricePerPersonWithVAT * g;
 
   let selHtml = '';
   menu.courses.filter(c => c.active !== false && hasActiveDishes(c))
@@ -1596,9 +1598,14 @@ function renderSummary() {
       ? '<div class="summary-row"><div class="summary-label">Notas</div><div class="summary-value" style="font-style:italic;font-weight:300">'
         + document.getElementById('eventNotes').value + '</div></div>' : '')
     + '<div class="summary-price-row">'
-    + '<div><div class="summary-price-label">Total estimado</div>'
+    + '<div><div class="summary-price-label">Total estimado (sem IVA)</div>'
     + '<div class="summary-price-note">' + g + ' pessoas \u00D7 ' + menu.pricePerPerson + '\u20AC</div></div>'
     + '<div class="summary-price-value">' + total.toFixed(2) + '\u20AC</div>'
+    + '</div>'
+    + '<div class="summary-price-row" style="border-top: 2px solid var(--ocre); padding-top: 12px; margin-top: 8px;">'
+    + '<div><div class="summary-price-label" style="font-weight: 700;">Total com IVA</div>'
+    + '<div class="summary-price-note">' + g + ' pessoas \u00D7 ' + menu.pricePerPersonWithVAT + '\u20AC</div></div>'
+    + '<div class="summary-price-value" style="font-weight: 700; color: var(--ocre);">' + totalWithVAT.toFixed(2) + '\u20AC</div>'
     + '</div></div>';
 }
 
@@ -1637,7 +1644,10 @@ async function submitOrder() {
     }
   });
 
+  const orderRef = generateRef();
+  
   const payload = {
+    reference:      orderRef,
     clientName:     document.getElementById('clientName').value.trim(),
     clientEmail:    document.getElementById('clientEmail').value.trim(),
     clientPhone:    document.getElementById('clientPhone').value.trim(),
@@ -1659,10 +1669,11 @@ async function submitOrder() {
   try {
     await createFiberyOrder(payload);
     document.getElementById('loadingOverlay').classList.remove('visible');
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    // Don't hide section-4, just add success message below it
     document.getElementById('section-success').classList.add('active');
-    document.getElementById('orderRef').textContent = 'REF: ' + generateRef();
-    window.scrollTo(0, 0);
+    document.getElementById('orderRef').textContent = 'REF: ' + orderRef;
+    // Scroll to success message
+    document.getElementById('section-success').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
     document.getElementById('loadingOverlay').classList.remove('visible');
     document.getElementById('btn-submit').disabled = false;
