@@ -1075,6 +1075,7 @@ function transformFiberyToMenuData(fiberyMenus) {
       name: m['Catering/Name'] || '',
       description: m['Catering/Description'] || '',
       pricePerPerson: m['Catering/Price per Person'] || 0,
+      pricePerPersonWithVAT: m['Catering/Price per Person with VAT'] || 0,
       minGuests: m['Catering/Min Guests'] || 20,
       active: m['Catering/Active'] !== false,
       courses: parentCourses.sort((a, b) => a.displayOrder - b.displayOrder)
@@ -1138,7 +1139,7 @@ function renderMenuCards() {
       + '<div class="menu-card-code">' + m.code + '</div>'
       + '<div class="menu-card-name">' + m.name + '</div>'
       + '<div class="menu-card-desc">' + (m.description || '') + '</div>'
-      + '<div class="menu-card-price">' + m.pricePerPerson + '\u20AC<span>por pessoa</span></div>'
+      + '<div class="menu-card-price">' + m.pricePerPerson + '\u20AC + IVA<span>(' + m.pricePerPersonWithVAT + '\u20AC por pessoa)</span></div>'
       + '<div class="menu-card-min">M\u00EDnimo ' + m.minGuests + ' pessoas</div>'
       + '</div>'
     ).join('');
@@ -1159,7 +1160,7 @@ function renderCourses() {
 
   document.getElementById('step2-heading').textContent = 'Pratos \u2014 ' + menu.name;
   document.getElementById('step2-sub').textContent =
-    menu.pricePerPerson + '\u20AC por pessoa \u00B7 ' + guests + ' pessoas';
+    menu.pricePerPerson + '\u20AC + IVA (' + menu.pricePerPersonWithVAT + '\u20AC por pessoa) \u00B7 ' + guests + ' pessoas';
 
   const container = document.getElementById('coursesContainer');
   let html = '';
