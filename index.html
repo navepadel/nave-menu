@@ -302,6 +302,15 @@
   .dish-item:last-child { border-bottom: none; }
   .dish-item:hover { background: var(--cream); }
   .dish-item.selected { background: #FDF8F5; }
+  
+  .dish-item.mandatory {
+    cursor: default;
+    opacity: 0.7;
+    background: var(--cream);
+  }
+  .dish-item.mandatory:hover {
+    background: var(--cream);
+  }
 
   .dish-checkbox {
     width: 18px; height: 18px;
@@ -311,6 +320,14 @@
     margin-top: 2px;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.15s;
+  }
+  
+  .dish-checkbox.mandatory-check {
+    background: var(--verde);
+    border-color: var(--verde);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
   }
 
   .dish-item.selected .dish-checkbox {
@@ -1088,7 +1105,8 @@ function transformCourse(c) {
   base.dishes = (c['Catering/Dishes'] || []).map(d => ({
     id: d['fibery/id'],
     name: d['Catering/Name'],
-    description: d['Catering/Description'] || ''
+    description: d['Catering/Description'] || '',
+    mandatory: d['Catering/Mandatory'] || false
   }));
 
   return base;
@@ -1168,8 +1186,10 @@ function renderCourses() {
 function renderStandardCourse(course) {
   let html = '<div class="dish-list">';
   course.dishes.forEach(dish => {
-    html += '<div class="dish-item" id="dish-' + course.id + '-' + dish.id + '">'
-      + '<div class="dish-checkbox"></div>'
+    const mandatory = dish.mandatory ? ' mandatory' : '';
+    const checkbox = dish.mandatory ? '<div class="dish-checkbox mandatory-check">✓</div>' : '<div class="dish-checkbox"></div>';
+    html += '<div class="dish-item' + mandatory + '" id="dish-' + course.id + '-' + dish.id + '">'
+      + checkbox
       + '<div class="dish-info">'
       + '<div class="dish-name">' + dish.name + '</div>'
       + (dish.description ? '<div class="dish-detail">' + dish.description + '</div>' : '')
@@ -1239,6 +1259,10 @@ function attachCourseHandlers(menu, guests) {
 
 // ── TOGGLE STANDARD DISH ─────────────────────────────────────────────────────
 function toggleStandardDish(course, dishId) {
+  // Don't allow clicking mandatory dishes
+  const dish = course.dishes.find(d => d.id === dishId);
+  if (dish && dish.mandatory) return;
+  
   const rule = course.selectionRule;
   const count = course.count || 1;
 
