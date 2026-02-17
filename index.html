@@ -1031,9 +1031,9 @@ async function init() {
 // Transform Fibery structure to our menu format
 function transformFiberyToMenuData(fiberyMenus) {
   return fiberyMenus.map(m => ({
-    id: (m['Catering/Public Id'] || '').toLowerCase().replace(/\s+/g, '-'),
-    code: m['Catering/Public Id'] || '',
-    name: m['fibery/name'] || '',
+    id: (m['Catering/Code'] || '').toLowerCase().replace(/\s+/g, '-'),
+    code: m['Catering/Code'] || '',
+    name: m['Catering/Name'] || '',
     description: m['Catering/Description'] || '',
     pricePerPerson: m['Catering/Price per Person'] || 0,
     minGuests: m['Catering/Min Guests'] || 20,
