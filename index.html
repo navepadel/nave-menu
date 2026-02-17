@@ -1066,7 +1066,7 @@ function transformCourse(c) {
 
   base.dishes = (c['Catering/Dishes'] || []).map(d => ({
     id: d['fibery/id'],
-    name: d['fibery/name'],
+    name: d['Catering/Name'],
     description: d['Catering/Description'] || ''
   }));
 
