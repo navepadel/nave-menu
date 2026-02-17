@@ -1094,6 +1094,16 @@ function transformCourse(c) {
   return base;
 }
 
+// Check if course has any active dishes (or active subcategories with dishes)
+function hasActiveDishes(course) {
+  if (course.selectionRule === 'choose_split') {
+    return course.subcategories && course.subcategories.some(sub => 
+      sub.dishes && sub.dishes.length > 0
+    );
+  }
+  return course.dishes && course.dishes.length > 0;
+}
+
 // ── RENDER MENU CARDS ─────────────────────────────────────────────────────────
 function renderMenuCards() {
   const container = document.getElementById('menuCards');
@@ -1130,7 +1140,7 @@ function renderCourses() {
   const container = document.getElementById('coursesContainer');
   let html = '';
 
-  menu.courses.filter(c => c.active !== false)
+  menu.courses.filter(c => c.active !== false && hasActiveDishes(c))
     .sort((a, b) => a.displayOrder - b.displayOrder)
     .forEach(course => {
       html += '<div class="course-block" id="course-block-' + course.id + '">'
@@ -1210,7 +1220,7 @@ function renderSplitCourse(course, guests) {
 
 // ── ATTACH HANDLERS ──────────────────────────────────────────────────────────
 function attachCourseHandlers(menu, guests) {
-  menu.courses.filter(c => c.active !== false).forEach(course => {
+  menu.courses.filter(c => c.active !== false && hasActiveDishes(c)).forEach(course => {
     if (course.selectionRule === 'choose_split') {
       course.subcategories.forEach(subcat => {
         subcat.dishes.forEach(dish => {
@@ -1388,7 +1398,7 @@ function validateAllCourses() {
   const menu = state.selectedMenu;
   const g = guests();
   let allValid = true;
-  menu.courses.filter(c => c.active !== false).forEach(course => {
+  menu.courses.filter(c => c.active !== false && hasActiveDishes(c)).forEach(course => {
     updateCourseStatus(course, g);
     const statusEl = document.getElementById('status-' + course.id);
     if (!statusEl.classList.contains('done')) allValid = false;
@@ -1489,7 +1499,7 @@ function renderSummary() {
   const total = menu.pricePerPerson * g;
 
   let selHtml = '';
-  menu.courses.filter(c => c.active !== false)
+  menu.courses.filter(c => c.active !== false && hasActiveDishes(c))
     .sort((a,b) => a.displayOrder - b.displayOrder)
     .forEach(course => {
       let value = '';
@@ -1562,7 +1572,7 @@ async function submitOrder() {
 
   // Flatten selections to readable JSON for Fibery
   const selectionsData = {};
-  menu.courses.filter(c => c.active !== false).forEach(course => {
+  menu.courses.filter(c => c.active !== false && hasActiveDishes(c)).forEach(course => {
     if (course.selectionRule === 'choose_one') {
       const dish = course.dishes.find(d => d.id === state.selections[course.id]);
       selectionsData[course.name] = dish ? dish.name : null;
