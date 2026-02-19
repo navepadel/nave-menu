@@ -1195,7 +1195,7 @@ function transformCourse(c) {
     base.count = c['Catering/Count'] || 2;
     base.ruleLabel = c['Catering/Rule Label'] || 'escolha ' + base.count;
   } else if (rule === 'choose_split') {
-    base.minPct = c['Catering/Min Pct'] != null ? c['Catering/Min Pct'] : 25;
+    base.minPct = c['Catering/Min Pct'] != null ? c['Catering/Min Pct'] : 0;
     base.ruleLabel = c['Catering/Rule Label'] || 'distribua as quantidades';
     base.subcategories = []; // Will be populated by parent
   }
