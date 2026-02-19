@@ -901,9 +901,9 @@
     <div class="guest-count-row">
       <div class="form-group" style="max-width:220px">
         <label>Nº de Pessoas *</label>
-        <input type="number" id="guestCount" placeholder="Mínimo 20" min="1"
+        <input type="number" id="guestCount" placeholder="Número de pessoas" min="1"
                oninput="onGuestCountChange()">
-        <div class="field-error" id="err-guests">Verifique o número mínimo de pessoas</div>
+        <div class="field-error" id="err-guests"></div>
       </div>
     </div>
 
@@ -1195,7 +1195,7 @@ function transformCourse(c) {
     base.count = c['Catering/Count'] || 2;
     base.ruleLabel = c['Catering/Rule Label'] || 'escolha ' + base.count;
   } else if (rule === 'choose_split') {
-    base.minPct = c['Catering/Min Pct'] || 25;
+    base.minPct = c['Catering/Min Pct'] != null ? c['Catering/Min Pct'] : 25;
     base.ruleLabel = c['Catering/Rule Label'] || 'distribua as quantidades';
     base.subcategories = []; // Will be populated by parent
   }
@@ -1458,7 +1458,13 @@ function updateCourseStatus(course, guests) {
   const rule     = course.selectionRule;
   let valid = false, msg = '';
 
-  if (rule === 'choose_one') {
+  // Check if all dishes are mandatory (auto-complete course)
+  const allMandatory = course.dishes && course.dishes.length > 0 && 
+                       course.dishes.every(d => d.mandatory);
+
+  if (allMandatory) {
+    valid = true;
+  } else if (rule === 'choose_one') {
     valid = !!state.selections[course.id];
     if (!valid) msg = 'Selecione 1 prato';
 
@@ -1493,7 +1499,12 @@ function updateCourseStatus(course, guests) {
     else if (total !== guests) msg = 'Total: ' + total + ' de ' + guests + ' pessoas';
   }
 
-  if (!state.selections[course.id] ||
+  if (allMandatory) {
+    statusEl.className = 'course-status done';
+    statusEl.textContent = '\u2713 Ok';
+    valEl.textContent = '';
+    valEl.classList.remove('visible');
+  } else if (!state.selections[course.id] ||
       (Array.isArray(state.selections[course.id]) && state.selections[course.id].length === 0) ||
       (typeof state.selections[course.id] === 'object' && !Array.isArray(state.selections[course.id]) && Object.keys(state.selections[course.id]).length === 0)) {
     statusEl.className = 'course-status pending';
