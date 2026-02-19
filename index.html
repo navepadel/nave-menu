@@ -894,7 +894,7 @@
   <div class="section active" id="section-1">
     <div class="section-title">Passo 1 de 4</div>
     <div class="section-heading">Escolha o seu menu</div>
-    <div class="section-sub">Todos os menus incluem couvert, prato de sopa, prato principal e sobremesa.</div>
+    <div class="section-sub"></div>
 
     <div class="menu-cards" id="menuCards"></div>
 
@@ -1253,9 +1253,10 @@ function renderCourses() {
   const menu = state.selectedMenu;
   const guests = parseInt(document.getElementById('guestCount').value) || menu.minGuests;
 
-  document.getElementById('step2-heading').textContent = 'Pratos \u2014 ' + menu.name;
+  document.getElementById('step2-heading').textContent = menu.name;
+  const descPart = menu.description ? menu.description + ' · ' : '';
   document.getElementById('step2-sub').textContent =
-    menu.pricePerPerson + '\u20AC + IVA (' + menu.pricePerPersonWithVAT + '\u20AC por pessoa) \u00B7 ' + guests + ' pessoas';
+    descPart + menu.pricePerPerson + '\u20AC + IVA (' + menu.pricePerPersonWithVAT + '\u20AC por pessoa) \u00B7 ' + guests + ' pessoas';
 
   const container = document.getElementById('coursesContainer');
   let html = '';
