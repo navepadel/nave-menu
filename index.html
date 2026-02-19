@@ -1279,6 +1279,11 @@ function renderCourses() {
 
   container.innerHTML = html;
   attachCourseHandlers(menu, guests);
+  
+  // Update initial status for all courses (especially mandatory ones)
+  menu.courses.filter(c => c.active !== false && hasActiveDishes(c)).forEach(course => {
+    updateCourseStatus(course, guests);
+  });
 }
 
 // ── RENDER STANDARD COURSE (choose_one / choose_many) ─────────────────────────
