@@ -1234,7 +1234,7 @@ function renderMenuCards() {
       + '<div class="menu-card-code">' + m.code + '</div>'
       + '<div class="menu-card-name">' + m.name + '</div>'
       + '<div class="menu-card-desc">' + (m.description || '') + '</div>'
-      + '<div class="menu-card-price">' + m.pricePerPerson + '\u20AC + IVA<span>(' + m.pricePerPersonWithVAT + '\u20AC por pessoa)</span></div>'
+      + '<div class="menu-card-price">' + m.pricePerPersonWithVAT + '\u20AC<span>(' + m.pricePerPerson + '\u20AC sem IVA)</span></div>'
       + '<div class="menu-card-min">M\u00EDnimo ' + m.minGuests + ' pessoas</div>'
       + '</div>'
     ).join('');
@@ -1256,7 +1256,7 @@ function renderCourses() {
   document.getElementById('step2-heading').textContent = menu.name;
   const descPart = menu.description ? menu.description + ' · ' : '';
   document.getElementById('step2-sub').textContent =
-    descPart + menu.pricePerPerson + '\u20AC + IVA (' + menu.pricePerPersonWithVAT + '\u20AC por pessoa) \u00B7 ' + guests + ' pessoas';
+    descPart + menu.pricePerPersonWithVAT + '\u20AC por pessoa (' + menu.pricePerPerson + '\u20AC sem IVA) \u00B7 ' + guests + ' pessoas';
 
   const container = document.getElementById('coursesContainer');
   let html = '';
@@ -1762,26 +1762,29 @@ async function submitOrder() {
   function formatSelections(data) {
     let text = '';
     Object.keys(data).forEach(courseName => {
-      text += courseName.toUpperCase() + '\n';
+      // Course header with separator line
+      text += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+      text += '**' + courseName.toUpperCase() + '**\n';
+      text += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
       const courseData = data[courseName];
       
       if (typeof courseData === 'string') {
         // choose_one
-        text += '• ' + courseData + '\n';
+        text += '✓ ' + courseData + '\n\n';
       } else if (Array.isArray(courseData)) {
         // choose_many
         courseData.forEach(dish => {
-          text += '• ' + dish + '\n';
+          text += '✓ ' + dish + '\n';
         });
+        text += '\n';
       } else if (typeof courseData === 'object') {
         // choose_split
         Object.keys(courseData).forEach(subcatName => {
           const subcat = courseData[subcatName];
-          text += '  ' + subcatName + ' (' + subcat.qty + ' pessoas)\n';
-          text += '  • ' + subcat.dish + '\n';
+          text += '**' + subcatName + '** — ' + subcat.qty + ' pessoas\n';
+          text += '  ✓ ' + subcat.dish + '\n\n';
         });
       }
-      text += '\n';
     });
     return text.trim();
   }
