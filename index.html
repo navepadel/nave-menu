@@ -1737,10 +1737,15 @@ async function submitOrder() {
 
     } else if (course.selectionRule === 'choose_many') {
       const ids = state.selections[course.id] || [];
-      selectionsData[course.name] = ids.map(id => {
+      const selectedDishes = ids.map(id => {
         const d = course.dishes.find(d => d.id === id);
         return d ? d.name : id;
       });
+      
+      // Add mandatory dishes
+      const mandatoryDishes = course.dishes.filter(d => d.mandatory).map(d => d.name);
+      const allDishes = [...new Set([...mandatoryDishes, ...selectedDishes])]; // Remove duplicates
+      selectionsData[course.name] = allDishes;
 
     } else if (course.selectionRule === 'choose_split') {
       const sel = state.selections[course.id] || {};
@@ -1762,8 +1767,7 @@ async function submitOrder() {
   function formatSelections(data) {
     let text = '';
     Object.keys(data).forEach(courseName => {
-      // Course header with separator line
-      text += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+      // Course header
       text += '**' + courseName.toUpperCase() + '**\n';
       text += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
       const courseData = data[courseName];
