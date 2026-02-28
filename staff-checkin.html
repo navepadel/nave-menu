@@ -439,7 +439,7 @@ body {
 //  Expected request/response contracts:
 //
 //  LOOKUP_WEBHOOK (POST)
-//    Request:  { phone: "351912345678" }
+//    Request:  { phone: "+351912345678" }   ← full E.164 format
 //    Response (found):
 //      {
 //        found: true,
@@ -518,12 +518,13 @@ function setLoading(btnId, loading) {
 
 // ─── PHONE FORMATTING ─────────────────────────────────────────
 function normalisePhone(raw) {
-  // Strip spaces, dashes, parentheses
+  // Strip everything except digits and leading +
   let digits = raw.replace(/\D/g, '');
-  // Strip country code if present, keep just the 9-digit local number
+  // Normalise country code variants → bare 9-digit local number
   if (digits.startsWith('00351')) digits = digits.slice(5);
   else if (digits.startsWith('351') && digits.length === 12) digits = digits.slice(3);
-  return digits;
+  // Return full E.164 format so Make.com / Fibery can use it directly
+  return '+351' + digits;
 }
 
 function initPhoneInput() {
@@ -543,7 +544,7 @@ async function handleLookup() {
   if (!raw) return;
 
   const phone = normalisePhone(raw);
-  if (phone.length < 9) {
+  if (phone.length < 13) {  // +351 (4) + 9 digits = 13 chars minimum
     document.getElementById('phone-input').classList.add('error');
     showError('error-phone', 'Número inválido. Verifique e tente novamente.');
     return;
