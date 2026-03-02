@@ -446,8 +446,6 @@ body {
 //        staffId:    "fibery-uuid",
 //        name:       "João Silva",
 //        email:      "joao@navepadel.pt",       ← optional
-//        role:       "Instrutor",               ← optional
-//        department: "Padel",                   ← optional
 //        phone:      "351912345678",            ← normalised
 //        openEntry:  null
 //           — or —
@@ -458,14 +456,14 @@ body {
 //
 //  CHECKIN_WEBHOOK (POST)
 //    Request:
-//      { staffId: "...", staffName: "...", role: "...", department: "...",
-//        phone: "...", timestamp: "2026-02-27T09:00:00Z" }
+//      { staffId: "...", staffName: "...", nif: "...",
+//        phone: "...", email: "...", timestamp: "2026-02-27T09:00:00Z" }
 //    Response: { success: true, entryId: "..." }
 //
 //  CHECKOUT_WEBHOOK (POST)
 //    Request:
-//      { entryId: "...", staffId: "...", staffName: "...", role: "...",
-//        department: "...", phone: "...", timestamp: "2026-02-27T18:00:00Z" }
+//      { entryId: "...", staffId: "...", staffName: "...", nif: "...",
+//        phone: "...", email: "...", timestamp: "2026-02-27T18:00:00Z" }
 //    Response: { success: true, duration: "8h 30m" }   ← duration optional
 // ─────────────────────────────────────────────────────────────
 const CONFIG = {
@@ -477,13 +475,12 @@ const CONFIG = {
 
 // ─── STATE ────────────────────────────────────────────────────
 let state = {
-  phone:      '',
-  staffId:    '',
-  staffName:  '',
-  role:       '',
-  department: '',
-  email:      '',
-  openEntry:  null,   // { id, checkInTime } or null
+  phone:     '',
+  staffId:   '',
+  staffName: '',
+  nif:       '',
+  email:     '',
+  openEntry: null,   // { id, checkInTime } or null
 };
 
 // ─── SCREEN HELPERS ───────────────────────────────────────────
@@ -556,7 +553,7 @@ async function handleLookup() {
   try {
     const res = await fetch(CONFIG.lookupWebhook, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone }),
     });
 
@@ -570,13 +567,12 @@ async function handleLookup() {
       return;
     }
 
-    state.phone      = phone;
-    state.staffId    = data.staffId;
-    state.staffName  = data.name;
-    state.role       = data.role       || '';
-    state.department = data.department || '';
-    state.email      = data.email      || '';
-    state.openEntry  = data.openEntry  || null;
+    state.phone     = phone;
+    state.staffId   = data.staffId;
+    state.staffName = data.name;
+    state.nif       = data.nif   || '';
+    state.email     = data.email || '';
+    state.openEntry = data.openEntry || null;
 
     renderActionScreen();
     showScreen('screen-action');
@@ -603,15 +599,7 @@ function renderActionScreen() {
   document.getElementById('staff-avatar').textContent = initials;
   document.getElementById('staff-name').textContent = state.staffName;
 
-  // Show role / department if available
-  const meta = [state.role, state.department].filter(Boolean).join(' · ');
-  if (meta) {
-    const metaEl = document.getElementById('staff-meta');
-    metaEl.textContent = meta;
-    metaEl.style.display = 'block';
-  } else {
-    document.getElementById('staff-meta').style.display = 'none';
-  }
+  document.getElementById('staff-meta').style.display = 'none';
 
   const checkinBtn  = document.getElementById('btn-checkin');
   const checkoutBtn = document.getElementById('btn-checkout');
@@ -662,15 +650,14 @@ async function handleCheckin() {
   try {
     const res = await fetch(CONFIG.checkinWebhook, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        staffId:    state.staffId,
-        staffName:  state.staffName,
-        role:       state.role,
-        department: state.department,
-        email:      state.email,
-        phone:      state.phone,
-        timestamp:  now.toISOString(),
+        staffId:   state.staffId,
+        staffName: state.staffName,
+        nif:       state.nif,
+        email:     state.email,
+        phone:     state.phone,
+        timestamp: now.toISOString(),
       }),
     });
 
@@ -704,16 +691,15 @@ async function handleCheckout() {
   try {
     const res = await fetch(CONFIG.checkoutWebhook, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        entryId:    state.openEntry.id,
-        staffId:    state.staffId,
-        staffName:  state.staffName,
-        role:       state.role,
-        department: state.department,
-        email:      state.email,
-        phone:      state.phone,
-        timestamp:  now.toISOString(),
+        entryId:   state.openEntry.id,
+        staffId:   state.staffId,
+        staffName: state.staffName,
+        nif:       state.nif,
+        email:     state.email,
+        phone:     state.phone,
+        timestamp: now.toISOString(),
       }),
     });
 
@@ -782,7 +768,7 @@ function goToPhone() {
 }
 
 function reset() {
-  state = { phone: '', staffId: '', staffName: '', openEntry: null };
+  state = { phone: '', staffId: '', staffName: '', nif: '', email: '', openEntry: null };
   const input = document.getElementById('phone-input');
   input.value = '';
   input.classList.remove('error');
