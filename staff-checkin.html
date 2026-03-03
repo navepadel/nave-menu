@@ -352,15 +352,22 @@ body {
 }
 
 /* ─── RECENT ENTRIES ─────────────────────────────────────── */
-.entry-row { display:flex; align-items:center; gap:10px; padding:10px 14px;
-             border-bottom:1px solid var(--cream-dark); }
-.entry-row:last-child { border-bottom:none; }
+.entry-item { border-bottom:1px solid var(--cream-dark); }
+.entry-item:last-child { border-bottom:none; }
+.entry-row { display:flex; align-items:center; gap:10px; padding:10px 14px; }
 .entry-date { font-size:.75rem; font-weight:600; color:var(--grey);
               white-space:nowrap; min-width:56px; }
 .entry-times { flex:1; font-size:.875rem; }
 .entry-duration { font-size:.7rem; font-weight:600; color:var(--verde);
                   background:rgba(0,110,84,.08); padding:3px 8px;
                   border-radius:999px; white-space:nowrap; }
+.entry-status-row { display:flex; align-items:center; gap:6px;
+                    padding:0 14px 8px 76px; }
+.entry-status-badge { font-size:.65rem; font-weight:600; letter-spacing:.06em;
+                      text-transform:uppercase; color:var(--grey);
+                      background:var(--cream-dark); padding:2px 7px;
+                      border-radius:999px; white-space:nowrap; }
+.entry-status-date { font-size:.68rem; color:var(--grey-light); }
 .entries-empty { padding:18px 14px; text-align:center; font-size:.8rem;
                  font-weight:300; color:var(--grey); }
 </style>
@@ -415,7 +422,7 @@ body {
 
     <!-- ── Time Picker ─────────────────────────────────────── -->
     <div id="time-picker-group" style="display:none; margin-bottom:20px">
-      <label class="input-label" for="time-input">Hora do registo</label>
+      <label class="input-label" for="time-input" style="text-align:center">Hora do registo</label>
       <input id="time-input" class="input-field" type="time" step="60"
              style="font-size:1.5rem;font-weight:600;text-align:center;letter-spacing:.08em">
       <div id="time-hint" style="font-size:.75rem;font-weight:300;color:var(--grey);text-align:center;margin-top:6px;min-height:1em"></div>
@@ -459,7 +466,7 @@ body {
 
 </div>
 
-<div class="footer">NAVE Academy &mdash; Staff Portal &mdash; v1.1.3</div>
+<div class="footer">NAVE &mdash; Staff Portal &mdash; v1.1.4</div>
 
 <script>
 // ─────────────────────────────────────────────────────────────
@@ -480,6 +487,14 @@ body {
 //        openEntry:  null
 //           — or —
 //        openEntry:  { id: "fibery-uuid", checkInTime: "2026-02-27T09:00:00Z" }
+//      recentEntries: [
+//        {
+//          checkIn:    "2026-02-27T09:00:00Z",  ← ISO timestamp
+//          checkOut:   "2026-02-27T17:30:00Z",  ← ISO timestamp or null
+//          status:     "Aprovado",               ← optional: status label from Fibery
+//          statusDate: "2026-02-28T00:00:00Z",  ← optional: date associated with status
+//        }, ...
+//      ]
 //      }
 //    Response (not found):
 //      { found: false }
@@ -650,10 +665,24 @@ function renderRecentEntries() {
       badge = '<span class="entry-duration">' + dur + '</span>';
     }
 
-    return '<div class="entry-row">' +
+    let statusRow = '';
+    if (e.status) {
+      const statusDateLabel = e.statusDate
+        ? new Date(e.statusDate).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
+        : '';
+      statusRow = '<div class="entry-status-row">' +
+        '<span class="entry-status-badge">' + e.status + '</span>' +
+        (statusDateLabel ? '<span class="entry-status-date">' + statusDateLabel + '</span>' : '') +
+        '</div>';
+    }
+
+    return '<div class="entry-item">' +
+      '<div class="entry-row">' +
       '<span class="entry-date">' + dateLabel + '</span>' +
       '<span class="entry-times">' + checkInTime + cout + '</span>' +
       badge +
+      '</div>' +
+      statusRow +
       '</div>';
   }).join('');
 }
