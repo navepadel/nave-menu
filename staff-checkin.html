@@ -666,15 +666,13 @@ function renderRecentEntries() {
     }
 
     const statusLabel = e.status || (e.state && e.state.name) || '';
-    let statusRow = '';
+    let statusBadge = '';
     if (statusLabel) {
       const statusDateLabel = e.statusDate
         ? new Date(e.statusDate).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
         : '';
-      statusRow = '<div class="entry-status-row">' +
-        '<span class="entry-status-badge">' + statusLabel + '</span>' +
-        (statusDateLabel ? '<span class="entry-status-date">' + statusDateLabel + '</span>' : '') +
-        '</div>';
+      statusBadge = '<span class="entry-status-badge">' + statusLabel + '</span>' +
+        (statusDateLabel ? '<span class="entry-status-date">' + statusDateLabel + '</span>' : '');
     }
 
     return '<div class="entry-item">' +
@@ -682,8 +680,8 @@ function renderRecentEntries() {
       '<span class="entry-date">' + dateLabel + '</span>' +
       '<span class="entry-times">' + checkInTime + cout + '</span>' +
       badge +
+      statusBadge +
       '</div>' +
-      statusRow +
       '</div>';
   }).join('');
 }
