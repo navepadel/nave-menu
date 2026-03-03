@@ -426,7 +426,7 @@ body {
     <div id="time-picker-group" style="display:none; margin-bottom:20px; text-align:center">
       <label class="input-label" for="time-input">Hora do registo</label>
       <input id="time-input" class="input-field" type="time" step="60"
-             style="font-size:1.5rem;font-weight:600;text-align:center;letter-spacing:.08em">
+             style="font-size:1.5rem;font-weight:600;text-align:center;text-align-last:center;letter-spacing:.08em">
       <div id="time-hint" style="font-size:.75rem;font-weight:300;color:var(--grey);text-align:center;margin-top:6px;min-height:1em"></div>
     </div>
 
@@ -665,7 +665,7 @@ function renderRecentEntries() {
     if (e.checkOut) {
       const mins = Math.floor((new Date(e.checkOut) - checkInDate) / 60000);
       const h = Math.floor(mins / 60), m = mins % 60;
-      const dur = h > 0 ? h + 'h' + (m > 0 ? ' ' + m + 'min' : '') : m + 'min';
+      const dur = h > 0 ? h + 'h' + (m > 0 ? ' ' + m + 'min' : '') : (m > 0 ? m + 'min' : '< 1min');
       badge = '<span class="entry-duration">' + dur + '</span>';
     } else {
       badge = '<span class="entry-duration" style="color:var(--grey);background:var(--cream-dark);font-style:italic">aberto</span>';
