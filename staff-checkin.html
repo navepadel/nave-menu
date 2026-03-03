@@ -633,16 +633,26 @@ function renderRecentEntries() {
   }
 
   list.innerHTML = entries.map(e => {
-    const d = new Date(e.date + 'T00:00');
-    const dateLabel = d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
+    const checkInDate = new Date(e.checkIn);
+    const dateLabel   = checkInDate.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
+    const checkInTime = checkInDate.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+
     const cout = e.checkOut
-      ? '<span style="color:var(--grey)"> \u2192 </span>' + e.checkOut
+      ? '<span style="color:var(--grey)"> \u2192 </span>' +
+        new Date(e.checkOut).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
       : '<span style="color:var(--grey);font-style:italic"> em curso</span>';
-    const badge = e.duration
-      ? '<span class="entry-duration">' + e.duration + '</span>' : '';
+
+    let badge = '';
+    if (e.checkOut) {
+      const mins = Math.floor((new Date(e.checkOut) - checkInDate) / 60000);
+      const h = Math.floor(mins / 60), m = mins % 60;
+      const dur = h > 0 ? h + 'h' + (m > 0 ? ' ' + m + 'min' : '') : m + 'min';
+      badge = '<span class="entry-duration">' + dur + '</span>';
+    }
+
     return '<div class="entry-row">' +
       '<span class="entry-date">' + dateLabel + '</span>' +
-      '<span class="entry-times">' + e.checkIn + cout + '</span>' +
+      '<span class="entry-times">' + checkInTime + cout + '</span>' +
       badge +
       '</div>';
   }).join('');
