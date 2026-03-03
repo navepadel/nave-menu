@@ -350,6 +350,19 @@ body {
   .card { padding: 32px 24px; }
   body { padding: 16px; justify-content: flex-start; padding-top: 48px; }
 }
+
+/* ─── RECENT ENTRIES ─────────────────────────────────────── */
+.entry-row { display:flex; align-items:center; gap:10px; padding:10px 14px;
+             border-bottom:1px solid var(--cream-dark); }
+.entry-row:last-child { border-bottom:none; }
+.entry-date { font-size:.75rem; font-weight:600; color:var(--grey);
+              white-space:nowrap; min-width:56px; }
+.entry-times { flex:1; font-size:.875rem; }
+.entry-duration { font-size:.7rem; font-weight:600; color:var(--verde);
+                  background:rgba(0,110,84,.08); padding:3px 8px;
+                  border-radius:999px; white-space:nowrap; }
+.entries-empty { padding:18px 14px; text-align:center; font-size:.8rem;
+                 font-weight:300; color:var(--grey); }
 </style>
 </head>
 <body>
@@ -400,6 +413,23 @@ body {
       <div id="open-entry-duration" class="open-entry-duration"></div>
     </div>
 
+    <!-- ── Time Picker ─────────────────────────────────────── -->
+    <div id="time-picker-group" style="display:none; margin-bottom:20px">
+      <label class="input-label" for="time-input">Hora do registo</label>
+      <input id="time-input" class="input-field" type="time" step="60"
+             style="font-size:1.5rem;font-weight:600;text-align:center;letter-spacing:.08em">
+      <div id="time-hint" style="font-size:.75rem;font-weight:300;color:var(--grey);text-align:center;margin-top:6px;min-height:1em"></div>
+    </div>
+
+    <!-- ── Recent Entries ──────────────────────────────────── -->
+    <div id="recent-entries-section" style="display:none; margin-bottom:20px">
+      <div style="font-size:.7rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+                  color:var(--grey);text-align:center;margin-bottom:10px">Últimas entradas</div>
+      <div id="recent-entries-list"
+           style="max-height:220px;overflow-y:auto;border:1px solid var(--cream-dark);
+                  border-radius:10px;background:var(--cream)"></div>
+    </div>
+
     <div id="error-action" class="error-msg"></div>
 
     <button id="btn-checkin" class="btn btn-checkin" onclick="handleCheckin()" style="display:none">
@@ -429,7 +459,7 @@ body {
 
 </div>
 
-<div class="footer">NAVE Academy &mdash; Staff Portal</div>
+<div class="footer">NAVE Academy &mdash; Staff Portal &mdash; v1.1.0</div>
 
 <script>
 // ─────────────────────────────────────────────────────────────
@@ -446,7 +476,7 @@ body {
 //        staffId:    "fibery-uuid",
 //        name:       "João Silva",
 //        email:      "joao@navepadel.pt",       ← optional
-//        phone:      "351912345678",            ← normalised
+//        nif:        "123456789",               ← optional
 //        openEntry:  null
 //           — or —
 //        openEntry:  { id: "fibery-uuid", checkInTime: "2026-02-27T09:00:00Z" }
@@ -475,12 +505,14 @@ const CONFIG = {
 
 // ─── STATE ────────────────────────────────────────────────────
 let state = {
-  phone:     '',
-  staffId:   '',
-  staffName: '',
-  nif:       '',
-  email:     '',
-  openEntry: null,   // { id, checkInTime } or null
+  phone:         '',
+  staffId:       '',
+  staffName:     '',
+  nif:           '',
+  email:         '',
+  openEntry:     null,   // { id, checkInTime } or null
+  recentEntries: [],     // last N entries from lookup webhook
+  selectedTime:  null,   // Date chosen in time picker
 };
 
 // ─── SCREEN HELPERS ───────────────────────────────────────────
@@ -572,7 +604,8 @@ async function handleLookup() {
     state.staffName = data.name;
     state.nif       = data.nif   || '';
     state.email     = data.email || '';
-    state.openEntry = data.openEntry || null;
+    state.openEntry     = data.openEntry || null;
+    state.recentEntries = Array.isArray(data.recentEntries) ? data.recentEntries : [];
 
     renderActionScreen();
     showScreen('screen-action');
@@ -583,6 +616,77 @@ async function handleLookup() {
   } finally {
     setLoading('btn-lookup', false);
   }
+}
+
+// ─── RECENT ENTRIES ───────────────────────────────────────────
+function renderRecentEntries() {
+  const section = document.getElementById('recent-entries-section');
+  const list    = document.getElementById('recent-entries-list');
+  const entries = state.recentEntries;
+
+  section.style.display = 'block';
+
+  if (!entries || entries.length === 0) {
+    list.innerHTML = '<div class="entries-empty">Sem registos anteriores</div>';
+    return;
+  }
+
+  list.innerHTML = entries.map(e => {
+    const d = new Date(e.date + 'T00:00');
+    const dateLabel = d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
+    const cout = e.checkOut
+      ? '<span style="color:var(--grey)"> \u2192 </span>' + e.checkOut
+      : '<span style="color:var(--grey);font-style:italic"> em curso</span>';
+    const badge = e.duration
+      ? '<span class="entry-duration">' + e.duration + '</span>' : '';
+    return '<div class="entry-row">' +
+      '<span class="entry-date">' + dateLabel + '</span>' +
+      '<span class="entry-times">' + e.checkIn + cout + '</span>' +
+      badge +
+      '</div>';
+  }).join('');
+}
+
+// ─── TIME PICKER ──────────────────────────────────────────────
+function initTimePicker() {
+  const group = document.getElementById('time-picker-group');
+  const hint  = document.getElementById('time-hint');
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const toHHMM = d => pad(d.getHours()) + ':' + pad(d.getMinutes());
+
+  group.style.display = 'block';
+
+  // Replace input node to wipe any prior event listeners
+  const oldInput = document.getElementById('time-input');
+  const fresh = oldInput.cloneNode(true);
+  oldInput.parentNode.replaceChild(fresh, oldInput);
+
+  fresh.value = toHHMM(now);
+  fresh.max   = toHHMM(now);
+  hint.textContent = '';
+  state.selectedTime = now;
+
+  fresh.addEventListener('change', () => {
+    const parts = fresh.value.split(':').map(Number);
+    const h = parts[0], m = parts[1];
+    const cur = new Date();
+    const sel = new Date(); sel.setHours(h, m, 0, 0);
+
+    if (sel > cur) {
+      fresh.value = toHHMM(cur);
+      sel.setHours(cur.getHours(), cur.getMinutes(), 0, 0);
+      hint.textContent = 'Não pode selecionar uma hora futura.';
+    } else {
+      const diffMins = Math.floor((cur - sel) / 60000);
+      const h2 = Math.floor(diffMins / 60), m2 = diffMins % 60;
+      hint.textContent = diffMins === 0 ? '' :
+        'Registo retroativo: ' + (h2 > 0 ? h2 + 'h ' + m2 + 'min atrás' : diffMins + 'min atrás');
+    }
+    fresh.max = toHHMM(new Date());
+    state.selectedTime = sel;
+  });
 }
 
 // ─── SCREEN 2: ACTION ─────────────────────────────────────────
@@ -625,11 +729,24 @@ function renderActionScreen() {
         formatDuration(checkInDate, new Date());
     }, 60000);
   } else {
-    document.getElementById('staff-status').textContent = 'Pronto para registar entrada';
-    entryBox.style.display = 'none';
-    checkinBtn.style.display  = 'flex';
+    entryBox.style.display    = 'none';
     checkoutBtn.style.display = 'none';
+
+    const hasUnclosed = (state.recentEntries || []).some(e => !e.checkOut);
+    if (hasUnclosed) {
+      document.getElementById('staff-status').textContent = 'Saída pendente';
+      checkinBtn.style.display = 'none';
+      showError('error-action',
+        'Tem registos anteriores sem saída registada. Regularize junto da administração antes de registar nova entrada.');
+    } else {
+      document.getElementById('staff-status').textContent = 'Pronto para registar entrada';
+      checkinBtn.style.display = 'flex';
+      clearError('error-action');
+    }
   }
+
+  initTimePicker();
+  renderRecentEntries();
 }
 
 function formatDuration(start, end) {
@@ -645,7 +762,7 @@ async function handleCheckin() {
   clearError('error-action');
   setLoading('btn-checkin', true);
 
-  const now = new Date();
+  const now = state.selectedTime || new Date();
 
   try {
     const res = await fetch(CONFIG.checkinWebhook, {
@@ -686,7 +803,7 @@ async function handleCheckout() {
   setLoading('btn-checkout', true);
   clearInterval(window._durationTimer);
 
-  const now = new Date();
+  const now = state.selectedTime || new Date();
 
   try {
     const res = await fetch(CONFIG.checkoutWebhook, {
@@ -768,7 +885,8 @@ function goToPhone() {
 }
 
 function reset() {
-  state = { phone: '', staffId: '', staffName: '', nif: '', email: '', openEntry: null };
+  state = { phone: '', staffId: '', staffName: '', nif: '', email: '',
+            openEntry: null, recentEntries: [], selectedTime: null };
   const input = document.getElementById('phone-input');
   input.value = '';
   input.classList.remove('error');
