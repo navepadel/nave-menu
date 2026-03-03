@@ -441,6 +441,8 @@ body {
       <div id="recent-entries-list"
            style="max-height:220px;overflow-y:auto;border:1px solid var(--cream-dark);
                   border-radius:10px;background:var(--cream)"></div>
+      <div id="entries-summary" style="display:none;margin-top:8px;text-align:right;
+                font-size:.75rem;font-weight:600;color:var(--grey);letter-spacing:.04em"></div>
     </div>
 
     <div id="error-action" class="error-msg"></div>
@@ -653,6 +655,19 @@ function renderRecentEntries() {
   if (!entries || entries.length === 0) {
     list.innerHTML = '<div class="entries-empty">Sem registos anteriores</div>';
     return;
+  }
+
+  const summaryEl = document.getElementById('entries-summary');
+  const submittedMins = entries
+    .filter(e => e.checkOut && (e.status || (e.state && e.state.name) || '').toLowerCase().includes('submit'))
+    .reduce((sum, e) => sum + Math.floor((new Date(e.checkOut) - new Date(e.checkIn)) / 60000), 0);
+  if (submittedMins > 0) {
+    const sh = Math.floor(submittedMins / 60), sm = submittedMins % 60;
+    const durStr = sh > 0 ? sh + 'h' + (sm > 0 ? ' ' + sm + 'min' : '') : sm + 'min';
+    summaryEl.textContent = 'Total submetido: ' + durStr;
+    summaryEl.style.display = 'block';
+  } else {
+    summaryEl.style.display = 'none';
   }
 
   list.innerHTML = entries.map(e => {
