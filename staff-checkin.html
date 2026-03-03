@@ -459,7 +459,7 @@ body {
 
 </div>
 
-<div class="footer">NAVE Academy &mdash; Staff Portal &mdash; v1.1.1</div>
+<div class="footer">NAVE Academy &mdash; Staff Portal &mdash; v1.1.2</div>
 
 <script>
 // ─────────────────────────────────────────────────────────────
@@ -605,7 +605,7 @@ async function handleLookup() {
     state.staffName = data.name;
     state.nif       = data.nif   || '';
     state.email     = data.email || '';
-    state.openEntry     = data.openEntry || null;
+    state.openEntry     = (data.openEntry && data.openEntry.exists) ? data.openEntry : null;
     state.recentEntries = Array.isArray(data.recentEntries) ? data.recentEntries : [];
 
     renderActionScreen();
